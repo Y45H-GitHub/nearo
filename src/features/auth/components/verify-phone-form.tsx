@@ -1,18 +1,27 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { sendPhoneOtp, verifyPhoneOtp } from "@/features/auth/actions";
 
 export function VerifyPhoneForm({ onVerified }: { onVerified?: () => void }) {
+  const router = useRouter();
   const [step, setStep] = useState<"phone" | "code">("phone");
   const [sendState, sendAction, sending] = useActionState(sendPhoneOtp, null);
   const [verifyState, verifyAction, verifying] = useActionState(verifyPhoneOtp, null);
 
+  useEffect(() => {
+    if (verifyState?.ok) {
+      onVerified?.();
+      router.refresh();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [verifyState]);
+
   if (verifyState?.ok) {
-    onVerified?.();
     return (
       <p className="text-sm text-status-success">Phone number verified.</p>
     );
