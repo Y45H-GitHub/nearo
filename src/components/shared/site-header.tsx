@@ -20,10 +20,18 @@ export async function SiteHeader() {
       <div className="flex items-center gap-3">
         <ThemeToggle />
         {result?.profile ? (
-          <UserMenu
-            fullName={result.profile.full_name}
-            avatarUrl={result.profile.avatar_url}
-          />
+          <>
+            <Button variant="ghost" asChild>
+              <Link href="/owner/listings">My listings</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/owner/listings/new">List an item</Link>
+            </Button>
+            <UserMenu
+              fullName={result.profile.full_name}
+              avatarUrl={result.profile.avatar_url}
+            />
+          </>
         ) : (
           <>
             <Button variant="ghost" asChild>
