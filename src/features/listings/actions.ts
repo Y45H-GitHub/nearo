@@ -2,8 +2,28 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { listingInputSchema, type ListingInput } from "@/lib/validation/listing";
 import { actionError, actionOk, type ActionResult } from "@/lib/validation/errors";
+
+/**
+ * Fire-and-forget view counter. Uses the service-role client because a
+ * public visitor (no write access under products RLS) triggers this, not
+ * just the owner — the increment itself is safe to allow unconditionally.
+ */
+export async function incrementViewCount(productId: string): Promise<void> {
+  const serviceRole = createServiceRoleClient();
+  const { data } = await serviceRole
+    .from("products")
+    .select("view_count")
+    .eq("id", productId)
+    .single();
+  if (!data) return;
+  await serviceRole
+    .from("products")
+    .update({ view_count: ((data as { view_count: number }).view_count ?? 0) + 1 })
+    .eq("id", productId);
+}
 
 async function requireVerifiedOwner() {
   const supabase = await createClient();

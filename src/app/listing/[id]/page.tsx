@@ -5,7 +5,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/shared/status-pill";
 import { VerifiedBadge } from "@/components/shared/verified-badge";
+import { WishlistButton } from "@/features/wishlist/components/wishlist-button";
+import { getWishlistedProductIds } from "@/features/wishlist/queries";
 import { getProductDetail } from "@/features/listings/queries";
+import { incrementViewCount } from "@/features/listings/actions";
 
 const CONDITION_LABELS: Record<string, string> = {
   new: "New",
@@ -27,6 +30,9 @@ export default async function ProductDetailsPage({
   if (!isOwner && !["available", "booking_requested", "booked", "rented", "returned"].includes(product.status)) {
     notFound();
   }
+
+  if (!isOwner) void incrementViewCount(product.id);
+  const wishlisted = (await getWishlistedProductIds()).has(product.id);
 
   const cover = images.find((i) => i.is_cover) ?? images[0];
   const gallery = images.filter((i) => i.id !== cover?.id);
@@ -110,7 +116,14 @@ export default async function ProductDetailsPage({
         </div>
 
         <div className="sm:col-span-1">
-          <div className="rounded-lg border border-border bg-card p-5">
+          <div className="relative rounded-lg border border-border bg-card p-5">
+            {!isOwner && (
+              <WishlistButton
+                productId={product.id}
+                initialWishlisted={wishlisted}
+                className="absolute top-4 right-4"
+              />
+            )}
             <p className="text-xl font-semibold text-foreground">
               ₹{product.price_per_day.toLocaleString("en-IN")}
               <span className="text-sm font-normal text-muted-foreground"> / day</span>

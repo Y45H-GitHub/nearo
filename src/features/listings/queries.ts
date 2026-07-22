@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { distanceKm } from "@/lib/geo";
+import { DEFAULT_SEARCH_RADIUS_KM } from "@/config/constants";
 import type { ProductCondition, ProductStatus } from "@/types/domain";
 
 export type CategoryRow = {
@@ -56,6 +58,7 @@ export type ProductRow = {
   visibility_radius_km: number;
   status: ProductStatus;
   cover_image_url: string | null;
+  view_count: number;
   created_at: string;
 };
 
@@ -148,4 +151,110 @@ export async function getProductDetail(productId: string) {
       | null,
     isOwner: user?.id === (product as ProductRow).owner_id,
   };
+}
+
+export type ExploreFilters = {
+  q?: string;
+  category?: string; // category slug — matches either category_id or subcategory_id
+  minPrice?: number;
+  maxPrice?: number;
+  condition?: ProductCondition[];
+  minRating?: number;
+  lat?: number;
+  lng?: number;
+  radiusKm?: number;
+  availableFrom?: string;
+  availableTo?: string;
+  sort?: "newest" | "popular" | "price_asc" | "price_desc" | "distance";
+};
+
+export type ExploreListing = Pick<
+  ProductRow,
+  "id" | "title" | "price_per_day" | "city" | "cover_image_url" | "lat" | "lng" | "created_at" | "view_count"
+> & { distanceKm: number | null };
+
+export async function getExploreListings(filters: ExploreFilters) {
+  const supabase = await createClient();
+
+  let query = supabase
+    .from("products")
+    .select(
+      "id, title, price_per_day, city, cover_image_url, lat, lng, created_at, view_count, owner_id",
+    )
+    .eq("status", "available");
+
+  if (filters.category) {
+    const { data: cat } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("slug", filters.category)
+      .maybeSingle();
+    const categoryId = (cat as { id: string } | null)?.id;
+    if (categoryId) {
+      query = query.or(`category_id.eq.${categoryId},subcategory_id.eq.${categoryId}`);
+    }
+  }
+  if (filters.q) {
+    query = query.or(`title.ilike.%${filters.q}%,description.ilike.%${filters.q}%`);
+  }
+  if (filters.minPrice !== undefined) query = query.gte("price_per_day", filters.minPrice);
+  if (filters.maxPrice !== undefined) query = query.lte("price_per_day", filters.maxPrice);
+  if (filters.condition && filters.condition.length > 0) {
+    query = query.in("condition", filters.condition);
+  }
+
+  query = query.limit(60);
+  if (filters.sort === "price_asc") query = query.order("price_per_day", { ascending: true });
+  else if (filters.sort === "price_desc") query = query.order("price_per_day", { ascending: false });
+  else if (filters.sort === "popular") query = query.order("view_count", { ascending: false });
+  else query = query.order("created_at", { ascending: false });
+
+  const { data } = await query;
+  let listings = (data ?? []) as (ExploreListing & { owner_id: string })[];
+
+  if (filters.minRating) {
+    const ownerIds = [...new Set(listings.map((l) => l.owner_id))];
+    const { data: owners } = await supabase
+      .from("profiles")
+      .select("id, rating_avg")
+      .in("id", ownerIds);
+    const ratingByOwner = new Map(
+      (owners ?? []).map((o) => [(o as { id: string }).id, (o as { rating_avg: number }).rating_avg]),
+    );
+    listings = listings.filter((l) => (ratingByOwner.get(l.owner_id) ?? 0) >= filters.minRating!);
+  }
+
+  if (filters.availableFrom && filters.availableTo) {
+    const ids = listings.map((l) => l.id);
+    const { data: blocks } = await supabase
+      .from("availability_blocks")
+      .select("product_id, start_date, end_date")
+      .in("product_id", ids)
+      .lte("start_date", filters.availableTo)
+      .gte("end_date", filters.availableFrom);
+    const blockedIds = new Set(
+      (blocks ?? []).map((b) => (b as { product_id: string }).product_id),
+    );
+    listings = listings.filter((l) => !blockedIds.has(l.id));
+  }
+
+  const withDistance: ExploreListing[] = listings.map((l) => ({
+    ...l,
+    distanceKm:
+      filters.lat !== undefined && filters.lng !== undefined
+        ? distanceKm(filters.lat, filters.lng, l.lat, l.lng)
+        : null,
+  }));
+
+  const radiusKm = filters.radiusKm ?? DEFAULT_SEARCH_RADIUS_KM;
+  const filtered =
+    filters.lat !== undefined && filters.lng !== undefined
+      ? withDistance.filter((l) => l.distanceKm !== null && l.distanceKm <= radiusKm)
+      : withDistance;
+
+  if (filters.sort === "distance" || (filters.lat !== undefined && !filters.sort)) {
+    filtered.sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
+  }
+
+  return filtered;
 }

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { StatusPill } from "@/components/shared/status-pill";
+import { WishlistButton } from "@/features/wishlist/components/wishlist-button";
 import type { ProductStatus } from "@/types/domain";
 
 export function ListingCard({
@@ -10,6 +11,9 @@ export function ListingCard({
   city,
   coverImageUrl,
   status,
+  distanceKm,
+  wishlisted,
+  showWishlist = false,
 }: {
   id: string;
   title: string;
@@ -17,6 +21,9 @@ export function ListingCard({
   city: string;
   coverImageUrl: string | null;
   status?: ProductStatus;
+  distanceKm?: number;
+  wishlisted?: boolean;
+  showWishlist?: boolean;
 }) {
   return (
     <Link
@@ -40,10 +47,20 @@ export function ListingCard({
         {status && (
           <StatusPill status={status} className="absolute top-2 left-2 shadow-sm" />
         )}
+        {showWishlist && (
+          <WishlistButton
+            productId={id}
+            initialWishlisted={wishlisted ?? false}
+            className="absolute top-2 right-2"
+          />
+        )}
       </div>
       <div className="flex flex-col gap-1 p-3">
         <p className="truncate text-sm font-medium text-foreground">{title}</p>
-        <p className="text-xs text-muted-foreground">{city}</p>
+        <p className="text-xs text-muted-foreground">
+          {city}
+          {typeof distanceKm === "number" && ` · ${distanceKm.toFixed(1)} km away`}
+        </p>
         <p className="text-sm font-semibold text-foreground">
           ₹{pricePerDay.toLocaleString("en-IN")}
           <span className="font-normal text-muted-foreground"> / day</span>
