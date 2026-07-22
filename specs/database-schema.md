@@ -7,7 +7,8 @@ purpose: The authoritative entity/relationship model. Runnable SQL lives in /sup
 **Status:** Draft v1 — Phase 6 deliverable
 **Depends on:** [knowledge/business-rules.md](../knowledge/business-rules.md),
 [mvp-scope.md § State Machines](mvp-scope.md#booking-state-machine)
-**Implements as:** [supabase/migrations/0001_init.sql](../supabase/migrations/0001_init.sql)
+**Implements as:** [supabase/migrations/0001_init.sql](../supabase/migrations/0001_init.sql),
+[supabase/migrations/0002_auth_support.sql](../supabase/migrations/0002_auth_support.sql)
 
 ## 1. Modeling Assumption Worth Flagging
 
@@ -86,6 +87,29 @@ One row per `auth.users` row (1:1, id shared). Public-readable subset + private 
 `is_verified` is **not stored** — computed as `phone_verified_at IS NOT NULL AND` the linked
 `auth.users.email_confirmed_at IS NOT NULL`, exposed via a Postgres view/function
 (`profiles_is_verified(profile_id)`) so it can't drift from the two real signals.
+
+A `profiles` row is created automatically by an `after insert on auth.users` trigger
+(`handle_new_user`, in `0002_auth_support.sql`) — this covers email/password signup and Google
+OAuth uniformly, so no client code path is responsible for remembering to create it.
+
+### `phone_otps`
+Backs the mocked phone-verification flow ([ADR 0006](../decisions/0006-notifications-mocked-multi-channel-adapter.md)).
+Real rows, no real SMS sent.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid, PK | |
+| `profile_id` | uuid, FK → `profiles.id`, `ON DELETE CASCADE` | |
+| `phone` | text | |
+| `code` | text | 6-digit code |
+| `attempts` | int, default 0 | Incremented on failed verify; locked out after 3 in app logic |
+| `expires_at` | timestamptz | |
+| `consumed_at` | timestamptz, nullable | Set once successfully verified |
+| `created_at` | timestamptz | |
+
+No client RLS policy at all — only Server Actions using the service-role client
+([ADR 0007](../decisions/0007-server-actions-vs-route-handlers-vs-direct-queries.md)) touch this
+table.
 
 ### `categories`
 Self-referencing for subcategories (one level deep in MVP — no sub-subcategories).

@@ -34,9 +34,11 @@ listed below (multi-table writes, cross-table checks) are exactly why RLS alone 
 
 | Action | Location | Does | Who |
 |---|---|---|---|
-| `signUp(email, password)` | `features/auth/actions` | Creates `auth.users` + `profiles` row (city defaulted to launch city) | Guest |
-| `verifyPhone(otp)` | `features/auth/actions` | Validates OTP against `MockSmsChannel`-issued code, sets `profiles.phone_verified_at` | Auth |
-| `resendOtp()` | `features/auth/actions` | Re-dispatches via `MockSmsChannel` | Auth |
+| `signUp(email, password, fullName)` | `features/auth/actions` | Calls `supabase.auth.signUp` — the matching `profiles` row is created by the `handle_new_user` DB trigger (`0002_auth_support.sql`), not by this action, so Google OAuth gets the same profile row for free | Guest |
+| Google OAuth | client-side (`supabase.auth.signInWithOAuth`) + `app/auth/callback/route.ts` | Redirects to Google, callback route exchanges the code for a session | Guest |
+| `sendPhoneOtp(phone)` | `features/auth/actions` | Generates a 6-digit code, writes a `phone_otps` row (service-role client), "sends" it via `MockSmsChannel` (console log + dev-only return value per [ADR 0006](../decisions/0006-notifications-mocked-multi-channel-adapter.md)) | Auth |
+| `verifyPhoneOtp(code)` | `features/auth/actions` | Validates against the latest unconsumed `phone_otps` row (checks `expires_at`, increments `attempts`, 3-attempt lockout), sets `profiles.phone_verified_at` | Auth |
+| `updateProfile(formData)` | `features/auth/actions` | Updates own `full_name`/`bio`/`city` | Auth |
 | `createListing(formData)` | `features/listings/actions` | Validates (zod), inserts `products` row as `draft`, uploads images to Storage, inserts `product_images` | Verified |
 | `publishListing(productId)` | `features/listings/actions` | Checks ownership, requires ≥1 image + all required fields, sets `status = 'available'`, `published_at = now()` | Verified, owner |
 | `updateListing(productId, formData)` | `features/listings/actions` | Checks ownership, updates `products`/`product_images` | Verified, owner |

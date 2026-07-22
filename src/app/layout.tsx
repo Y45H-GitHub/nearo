@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/shared/theme-provider";
+import { SiteHeader } from "@/components/shared/site-header";
 import "./globals.css";
 
 const inter = Inter({
@@ -32,6 +33,7 @@ export default function RootLayout({
           defaultTheme="system"
           enableSystem
         >
+          <SiteHeader />
           {children}
         </ThemeProvider>
       </body>

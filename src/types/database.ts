@@ -13,6 +13,7 @@ export type Database = {
         Row: Record<string, unknown>;
         Insert: Record<string, unknown>;
         Update: Record<string, unknown>;
+        Relationships: never[];
       }
     >;
     Views: Record<string, never>;
