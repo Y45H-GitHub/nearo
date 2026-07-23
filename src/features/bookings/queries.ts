@@ -75,7 +75,28 @@ export async function getBookingDetail(bookingId: string) {
   const booking = data as unknown as BookingListItem;
   if (booking.customer_id !== user.id && booking.owner_id !== user.id) return null;
 
-  return { booking, viewerRole: booking.owner_id === user.id ? ("owner" as const) : ("customer" as const) };
+  const viewerRole = booking.owner_id === user.id ? ("owner" as const) : ("customer" as const);
+  const counterpartId = viewerRole === "owner" ? booking.customer_id : booking.owner_id;
+
+  const { data: counterpart } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url")
+    .eq("id", counterpartId)
+    .single();
+
+  const { data: existingReview } = await supabase
+    .from("reviews")
+    .select("id")
+    .eq("booking_id", bookingId)
+    .eq("reviewer_id", user.id)
+    .maybeSingle();
+
+  return {
+    booking,
+    viewerRole,
+    counterpart: counterpart as { id: string; full_name: string; avatar_url: string | null } | null,
+    viewerHasReviewed: Boolean(existingReview),
+  };
 }
 
 export async function getAvailabilityBlocks(productId: string) {

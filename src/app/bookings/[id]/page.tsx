@@ -5,6 +5,7 @@ import { StatusPill } from "@/components/shared/status-pill";
 import { PriceBreakdown } from "@/features/bookings/components/price-breakdown";
 import { BookingActions } from "@/features/bookings/components/booking-actions";
 import { BookingTransitionTrigger } from "@/features/bookings/components/booking-transition-trigger";
+import { ReviewForm } from "@/features/reviews/components/review-form";
 import { getBookingDetail } from "@/features/bookings/queries";
 
 export default async function BookingDetailPage({
@@ -15,7 +16,7 @@ export default async function BookingDetailPage({
   const { id } = await params;
   const result = await getBookingDetail(id);
   if (!result) notFound();
-  const { booking, viewerRole } = result;
+  const { booking, viewerRole, counterpart, viewerHasReviewed } = result;
 
   return (
     <div className="mx-auto max-w-lg px-6 py-10">
@@ -59,11 +60,12 @@ export default async function BookingDetailPage({
 
         <BookingActions bookingId={booking.id} status={booking.status} viewerRole={viewerRole} />
 
-        {["returned", "completed"].includes(booking.status) && (
-          <p className="text-sm text-muted-foreground">
-            Reviews are coming in the next update.
-          </p>
-        )}
+        {["returned", "completed"].includes(booking.status) &&
+          (viewerHasReviewed ? (
+            <p className="text-sm text-muted-foreground">You&apos;ve reviewed this rental.</p>
+          ) : (
+            <ReviewForm bookingId={booking.id} revieweeName={counterpart?.full_name ?? "the other party"} />
+          ))}
         {booking.status === "disputed" && (
           <p className="text-sm text-status-pending">
             This booking is under admin review.

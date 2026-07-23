@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VerifiedBadge } from "@/components/shared/verified-badge";
+import { RatingStars } from "@/features/reviews/components/rating-stars";
+import { ReviewList } from "@/features/reviews/components/review-list";
 import { getPublicProfile } from "@/features/auth/queries";
+import { getReviewsForUser } from "@/features/reviews/queries";
 
 function memberSince(createdAt: string) {
   return new Date(createdAt).toLocaleDateString("en-IN", {
@@ -18,6 +21,7 @@ export default async function PublicProfilePage({
   const { id } = await params;
   const profile = await getPublicProfile(id);
   if (!profile) notFound();
+  const reviews = await getReviewsForUser(id);
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
@@ -41,9 +45,7 @@ export default async function PublicProfilePage({
         <div>
           <dt className="text-muted-foreground">Rating</dt>
           <dd className="text-foreground">
-            {profile.rating_count > 0
-              ? `★ ${profile.rating_avg.toFixed(1)} (${profile.rating_count})`
-              : "No reviews yet"}
+            <RatingStars value={profile.rating_avg} count={profile.rating_count} />
           </dd>
         </div>
         <div>
@@ -61,6 +63,11 @@ export default async function PublicProfilePage({
       {profile.bio && (
         <p className="mt-8 text-sm text-foreground">{profile.bio}</p>
       )}
+
+      <div className="mt-10">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">Reviews</h2>
+        <ReviewList reviews={reviews} />
+      </div>
     </div>
   );
 }

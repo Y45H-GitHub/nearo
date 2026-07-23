@@ -7,9 +7,12 @@ import { StatusPill } from "@/components/shared/status-pill";
 import { VerifiedBadge } from "@/components/shared/verified-badge";
 import { WishlistButton } from "@/features/wishlist/components/wishlist-button";
 import { MessageOwnerButton } from "@/features/messaging/components/message-owner-button";
+import { RatingStars } from "@/features/reviews/components/rating-stars";
+import { ReviewList } from "@/features/reviews/components/review-list";
 import { getWishlistedProductIds } from "@/features/wishlist/queries";
 import { getProductDetail } from "@/features/listings/queries";
 import { incrementViewCount } from "@/features/listings/actions";
+import { getReviewsForUser } from "@/features/reviews/queries";
 
 const CONDITION_LABELS: Record<string, string> = {
   new: "New",
@@ -34,6 +37,7 @@ export default async function ProductDetailsPage({
 
   if (!isOwner) void incrementViewCount(product.id);
   const wishlisted = (await getWishlistedProductIds()).has(product.id);
+  const reviews = owner ? await getReviewsForUser(owner.id) : [];
 
   const cover = images.find((i) => i.is_cover) ?? images[0];
   const gallery = images.filter((i) => i.id !== cover?.id);
@@ -83,7 +87,10 @@ export default async function ProductDetailsPage({
                 </Avatar>
                 <div>
                   <p className="text-sm font-medium text-foreground">{owner.full_name}</p>
-                  <VerifiedBadge verified={Boolean(owner.phone_verified_at)} />
+                  <div className="flex items-center gap-2">
+                    <VerifiedBadge verified={Boolean(owner.phone_verified_at)} />
+                    <RatingStars value={owner.rating_avg} count={owner.rating_count} size="sm" />
+                  </div>
                 </div>
               </Link>
               {!isOwner && <MessageOwnerButton productId={product.id} />}
@@ -149,6 +156,11 @@ export default async function ProductDetailsPage({
             )}
           </div>
         </div>
+      </div>
+
+      <div className="mt-10">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">Reviews of {owner?.full_name ?? "the owner"}</h2>
+        <ReviewList reviews={reviews} />
       </div>
     </div>
   );
