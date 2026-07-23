@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { notify } from "@/lib/notifications/notify";
 import { submitReviewSchema } from "@/lib/validation/review";
 import { actionError, actionOk, type ActionResult } from "@/lib/validation/errors";
 
@@ -58,6 +59,13 @@ export async function submitReview(
     comment: parsed.data.comment || null,
   });
   if (error) return actionError("UNKNOWN", error.message);
+
+  const { data: reviewer } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
+  await notify(revieweeId, "review_received", {
+    reviewerName: (reviewer as { full_name?: string } | null)?.full_name || "Someone",
+    rating: String(parsed.data.rating),
+    href: `/users/${revieweeId}`,
+  });
 
   revalidatePath(`/bookings/${bookingId}`);
   revalidatePath(`/listing/${b.product_id}`);

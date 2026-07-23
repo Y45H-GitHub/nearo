@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { EmptyState } from "@/components/shared/empty-state";
 import { EarningsTable } from "@/features/owner-dashboard/components/earnings-table";
 import { getOwnerEarnings } from "@/features/owner-dashboard/queries";
 import { getOwnProfile } from "@/features/auth/queries";
@@ -22,9 +23,10 @@ export default async function OwnerEarningsPage() {
       </div>
 
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No earnings yet — accepted bookings will show up here.
-        </p>
+        <EmptyState
+          title="No earnings yet"
+          description="Accepted bookings will show up here with the gross, fee, and net payout."
+        />
       ) : (
         <EarningsTable rows={rows} />
       )}

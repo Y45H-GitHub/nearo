@@ -2,8 +2,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { UserMenu } from "@/components/shared/user-menu";
+import { NotificationBell } from "@/features/notifications/components/notification-bell";
 import { getOwnProfile } from "@/features/auth/queries";
 import { getTotalUnreadCount } from "@/features/messaging/queries";
+import { getNotifications, getUnreadNotificationCount } from "@/features/notifications/queries";
 
 /**
  * Minimal chrome through M3 — enough nav to reach every page that exists so
@@ -14,6 +16,9 @@ import { getTotalUnreadCount } from "@/features/messaging/queries";
 export async function SiteHeader() {
   const result = await getOwnProfile();
   const unreadCount = result?.profile ? await getTotalUnreadCount() : 0;
+  const [notifications, unreadNotifications] = result?.profile
+    ? await Promise.all([getNotifications(10), getUnreadNotificationCount()])
+    : [[], 0];
 
   return (
     <header className="flex items-center justify-between border-b border-border px-6 py-4">
@@ -29,6 +34,7 @@ export async function SiteHeader() {
         <ThemeToggle />
         {result?.profile ? (
           <>
+            <NotificationBell notifications={notifications} unreadCount={unreadNotifications} />
             <Button variant="ghost" asChild className="relative">
               <Link href="/messages">
                 Messages

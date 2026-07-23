@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { paymentProvider } from "@/lib/payments/mock-provider";
+import { notify } from "@/lib/notifications/notify";
 import { requestBookingSchema, type RequestBookingInput } from "@/lib/validation/booking";
 import { actionError, actionOk, type ActionResult } from "@/lib/validation/errors";
 import { CANCELLATION_FREE_WINDOW_HOURS, DEFAULT_PLATFORM_FEE_RATE } from "@/config/constants";
@@ -12,6 +13,22 @@ import type { BookingRow } from "@/features/bookings/queries";
 function daysBetween(start: string, end: string) {
   const ms = new Date(end).getTime() - new Date(start).getTime();
   return Math.round(ms / 86_400_000) + 1;
+}
+
+async function getFullName(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+): Promise<string> {
+  const { data } = await supabase.from("profiles").select("full_name").eq("id", userId).single();
+  return (data as { full_name?: string } | null)?.full_name || "Someone";
+}
+
+async function getProductTitle(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  productId: string,
+): Promise<string> {
+  const { data } = await supabase.from("products").select("title").eq("id", productId).single();
+  return (data as { title?: string } | null)?.title || "a listing";
 }
 
 export async function requestBooking(
@@ -43,7 +60,7 @@ export async function requestBooking(
 
   const { data: product } = await supabase
     .from("products")
-    .select("id, owner_id, status, price_per_day, security_deposit, min_rental_days, max_rental_days")
+    .select("id, owner_id, status, title, price_per_day, security_deposit, min_rental_days, max_rental_days")
     .eq("id", v.productId)
     .single();
   if (!product) return actionError("NOT_FOUND", "Listing not found.");
@@ -51,6 +68,7 @@ export async function requestBooking(
     id: string;
     owner_id: string;
     status: string;
+    title: string;
     price_per_day: number;
     security_deposit: number;
     min_rental_days: number;
@@ -102,10 +120,18 @@ export async function requestBooking(
   if (error || !bookingData) {
     return actionError("UNKNOWN", error?.message ?? "Could not submit request.");
   }
+  const newBookingId = (bookingData as { id: string }).id;
+
+  const customerName = await getFullName(supabase, user.id);
+  await notify(p.owner_id, "booking_requested", {
+    customerName,
+    productTitle: p.title,
+    href: `/bookings/${newBookingId}`,
+  });
 
   revalidatePath("/bookings");
   revalidatePath("/owner/bookings");
-  return actionOk({ bookingId: (bookingData as { id: string }).id });
+  return actionOk({ bookingId: newBookingId });
 }
 
 async function loadBookingForActor(bookingId: string) {
@@ -183,6 +209,12 @@ export async function acceptBooking(bookingId: string): Promise<ActionResult> {
     },
   ]);
 
+  const productTitle = await getProductTitle(supabase, booking.product_id);
+  await notify(booking.customer_id, "booking_accepted", {
+    productTitle,
+    href: `/bookings/${bookingId}`,
+  });
+
   revalidatePath("/bookings");
   revalidatePath("/owner/bookings");
   revalidatePath(`/bookings/${bookingId}`);
@@ -207,6 +239,12 @@ export async function rejectBooking(bookingId: string, reason?: string): Promise
     })
     .eq("id", bookingId);
   if (error) return actionError("UNKNOWN", error.message);
+
+  const productTitle = await getProductTitle(supabase, booking.product_id);
+  await notify(booking.customer_id, "booking_rejected", {
+    productTitle,
+    href: `/bookings/${bookingId}`,
+  });
 
   revalidatePath("/bookings");
   revalidatePath("/owner/bookings");
@@ -292,6 +330,10 @@ export async function cancelBooking(bookingId: string, reason?: string): Promise
     .eq("id", bookingId);
   if (error) return actionError("UNKNOWN", error.message);
 
+  const productTitle = await getProductTitle(supabase, booking.product_id);
+  const otherParty = isOwner ? booking.customer_id : booking.owner_id;
+  await notify(otherParty, "booking_cancelled", { productTitle, href: `/bookings/${bookingId}` });
+
   revalidatePath("/bookings");
   revalidatePath("/owner/bookings");
   revalidatePath(`/bookings/${bookingId}`);
@@ -318,6 +360,23 @@ export async function markReturned(
       .update({ status: "disputed" })
       .eq("id", bookingId);
     if (error) return actionError("UNKNOWN", error.message);
+
+    const productTitle = await getProductTitle(supabase, booking.product_id);
+    const { data: admins } = await supabase.from("profiles").select("id").eq("role", "admin");
+    const recipients = [
+      booking.customer_id,
+      booking.owner_id,
+      ...((admins ?? []) as { id: string }[]).map((a) => a.id),
+    ];
+    await Promise.all(
+      recipients.map((userId) =>
+        notify(userId, "dispute_opened", {
+          productTitle,
+          href: recipients.slice(0, 2).includes(userId) ? `/bookings/${bookingId}` : "/admin/bookings",
+        }),
+      ),
+    );
+
     revalidatePath(`/bookings/${bookingId}`);
     return actionOk(undefined);
   }

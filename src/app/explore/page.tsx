@@ -4,6 +4,7 @@ import { ListingCard } from "@/features/listings/components/listing-card";
 import {
   CategoryChips,
   ExploreFilterSidebar,
+  MobileFilterSheet,
   SortSelect,
 } from "@/features/listings/components/explore-controls";
 import { getCategoryTree, getExploreListings } from "@/features/listings/queries";
@@ -63,11 +64,14 @@ export default async function ExplorePage({
         </aside>
 
         <div>
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex items-center justify-between gap-2">
             <p className="text-sm text-muted-foreground">
               {listings.length} result{listings.length === 1 ? "" : "s"}
             </p>
-            <SortSelect />
+            <div className="flex items-center gap-2">
+              <MobileFilterSheet />
+              <SortSelect />
+            </div>
           </div>
 
           {listings.length === 0 ? (

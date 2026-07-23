@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { notify } from "@/lib/notifications/notify";
 import { sendMessageSchema } from "@/lib/validation/messaging";
 import { actionError, actionOk, type ActionResult } from "@/lib/validation/errors";
 
@@ -73,11 +74,11 @@ export async function sendMessage(
 
   const { data: thread } = await supabase
     .from("message_threads")
-    .select("id, customer_id, owner_id")
+    .select("id, customer_id, owner_id, product_id")
     .eq("id", threadId)
     .single();
   if (!thread) return actionError("NOT_FOUND", "Conversation not found.");
-  const t = thread as { id: string; customer_id: string; owner_id: string };
+  const t = thread as { id: string; customer_id: string; owner_id: string; product_id: string };
   if (t.customer_id !== user.id && t.owner_id !== user.id) {
     return actionError("NOT_OWNER", "You're not part of this conversation.");
   }
@@ -88,6 +89,17 @@ export async function sendMessage(
     body: parsed.data.body,
   });
   if (error) return actionError("UNKNOWN", error.message);
+
+  const recipientId = t.customer_id === user.id ? t.owner_id : t.customer_id;
+  const [{ data: sender }, { data: product }] = await Promise.all([
+    supabase.from("profiles").select("full_name").eq("id", user.id).single(),
+    supabase.from("products").select("title").eq("id", t.product_id).single(),
+  ]);
+  await notify(recipientId, "message_received", {
+    senderName: (sender as { full_name?: string } | null)?.full_name || "Someone",
+    productTitle: (product as { title?: string } | null)?.title || "a listing",
+    href: `/messages/${threadId}`,
+  });
 
   revalidatePath(`/messages/${threadId}`);
   revalidatePath("/messages");

@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MapPin, Loader2 } from "lucide-react";
+import { MapPin, Loader2, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import type { CategoryRow } from "@/features/listings/queries";
 import type { ProductCondition } from "@/types/domain";
@@ -176,6 +177,33 @@ export function ExploreFilterSidebar() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * The desktop <aside> filter sidebar is hidden below sm — this is the only
+ * way a mobile visitor can reach price/condition/distance filters at all.
+ */
+export function MobileFilterSheet() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button type="button" variant="outline" size="sm" className="sm:hidden">
+          <SlidersHorizontal className="size-4" />
+          Filters
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left">
+        <SheetHeader>
+          <SheetTitle>Filters</SheetTitle>
+        </SheetHeader>
+        <div className="overflow-y-auto px-4 pb-4">
+          <ExploreFilterSidebar />
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 

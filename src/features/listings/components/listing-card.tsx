@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { StatusPill } from "@/components/shared/status-pill";
 import { WishlistButton } from "@/features/wishlist/components/wishlist-button";
 import type { ProductStatus } from "@/types/domain";
@@ -26,6 +29,11 @@ export function ListingCard({
   showWishlist?: boolean;
 }) {
   return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+    >
     <Link
       href={`/listing/${id}`}
       className="group flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-shadow hover:shadow-md"
@@ -67,5 +75,6 @@ export function ListingCard({
         </p>
       </div>
     </Link>
+    </motion.div>
   );
 }
