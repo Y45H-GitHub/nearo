@@ -91,11 +91,16 @@ export function ListingWizard({
 }: {
   mode: "create" | "edit";
   productId?: string;
-  categories: { topLevel: CategoryRow[]; children: (parentId: string) => CategoryRow[] };
+  /** Flat list — functions can't cross the server/client boundary, so
+   * topLevel/children are derived locally instead of passed in. */
+  categories: CategoryRow[];
   initial?: WizardState;
 }) {
   const router = useRouter();
   const launchCity = process.env.NEXT_PUBLIC_LAUNCH_CITY || "";
+  const topLevelCategories = categories.filter((c) => !c.parent_id);
+  const childCategories = (parentId: string) =>
+    categories.filter((c) => c.parent_id === parentId);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<WizardState>(initial ?? emptyState(launchCity));
   const [locating, setLocating] = useState(false);
@@ -317,14 +322,14 @@ export function ListingWizard({
                 className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none dark:bg-input/30"
               >
                 <option value="">Choose a category</option>
-                {categories.topLevel.map((c) => (
+                {topLevelCategories.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
                 ))}
               </select>
             </div>
-            {form.categoryId && categories.children(form.categoryId).length > 0 && (
+            {form.categoryId && childCategories(form.categoryId).length > 0 && (
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="subcategory">Subcategory</Label>
                 <select
@@ -334,7 +339,7 @@ export function ListingWizard({
                   className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none dark:bg-input/30"
                 >
                   <option value="">None</option>
-                  {categories.children(form.categoryId).map((c) => (
+                  {childCategories(form.categoryId).map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>

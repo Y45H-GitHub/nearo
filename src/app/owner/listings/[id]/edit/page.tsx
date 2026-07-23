@@ -18,7 +18,7 @@ export default async function EditListingPage({
     <ListingWizard
       mode="edit"
       productId={product.id}
-      categories={categories}
+      categories={categories.rows}
       initial={{
         title: product.title,
         description: product.description,

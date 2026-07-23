@@ -26,5 +26,5 @@ export default async function NewListingPage() {
   }
 
   const categories = await getCategoryTree();
-  return <ListingWizard mode="create" categories={categories} />;
+  return <ListingWizard mode="create" categories={categories.rows} />;
 }
