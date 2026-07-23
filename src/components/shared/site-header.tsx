@@ -30,9 +30,6 @@ export async function SiteHeader() {
             <Button variant="ghost" asChild>
               <Link href="/wishlist">Wishlist</Link>
             </Button>
-            <Button variant="ghost" asChild>
-              <Link href="/owner/listings">My listings</Link>
-            </Button>
             <Button asChild>
               <Link href="/owner/listings/new">List an item</Link>
             </Button>

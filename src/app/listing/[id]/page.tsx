@@ -133,9 +133,19 @@ export default async function ProductDetailsPage({
                 + ₹{product.security_deposit.toLocaleString("en-IN")} refundable deposit
               </p>
             )}
-            <Button className="mt-4 w-full" disabled title="Booking ships in M4">
-              Request to book (coming soon)
-            </Button>
+            {isOwner ? (
+              <Button className="mt-4 w-full" disabled>
+                This is your listing
+              </Button>
+            ) : product.status === "available" ? (
+              <Button className="mt-4 w-full" asChild>
+                <Link href={`/listing/${product.id}/book`}>Request to book</Link>
+              </Button>
+            ) : (
+              <Button className="mt-4 w-full" disabled>
+                Not available right now
+              </Button>
+            )}
           </div>
         </div>
       </div>

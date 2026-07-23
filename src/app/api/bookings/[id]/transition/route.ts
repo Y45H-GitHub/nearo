@@ -1,0 +1,72 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { paymentProvider } from "@/lib/payments/mock-provider";
+
+/**
+ * Lazy, client-triggered status transition per api-design.md § 3 — no cron
+ * job in MVP. Called once when a booking detail/list page mounts.
+ */
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+
+  const { data: booking } = await supabase
+    .from("bookings")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (!booking) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+
+  const b = booking as {
+    id: string;
+    customer_id: string;
+    owner_id: string;
+    status: string;
+    start_date: string;
+    end_date: string;
+    deposit_amount: number;
+  };
+  if (b.customer_id !== user.id && b.owner_id !== user.id) {
+    return NextResponse.json({ error: "NOT_OWNER" }, { status: 403 });
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  if (b.status === "accepted" && b.start_date <= today) {
+    await supabase
+      .from("bookings")
+      .update({ status: "active", started_at: new Date().toISOString() })
+      .eq("id", id);
+    return NextResponse.json({ status: "active" });
+  }
+
+  if (b.status === "active" && b.end_date < today) {
+    const serviceRole = createServiceRoleClient();
+    if (b.deposit_amount > 0) {
+      const release = await paymentProvider.releaseDeposit(id, b.deposit_amount);
+      await serviceRole.from("payments").insert({
+        booking_id: id,
+        type: "deposit_release",
+        amount: b.deposit_amount,
+        status: "succeeded",
+        provider: "mock",
+        provider_reference: release.providerReference,
+      });
+    }
+    await supabase
+      .from("bookings")
+      .update({ status: "returned", returned_at: new Date().toISOString() })
+      .eq("id", id);
+    return NextResponse.json({ status: "returned" });
+  }
+
+  return NextResponse.json({ status: b.status });
+}
