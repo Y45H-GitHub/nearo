@@ -73,7 +73,7 @@ export function ReviewForm({
         onChange={(e) => setComment(e.target.value)}
         placeholder="Optional — how was the rental?"
         rows={3}
-        className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+        className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
       />
 
       {error && <p className="text-sm text-destructive">{error}</p>}

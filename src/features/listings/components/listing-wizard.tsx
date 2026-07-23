@@ -311,7 +311,7 @@ export function ListingWizard({
                 value={form.description}
                 onChange={(e) => set("description", e.target.value)}
                 rows={5}
-                className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+                className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
               />
               <p
                 className={`text-xs ${
@@ -330,7 +330,7 @@ export function ListingWizard({
                   set("categoryId", e.target.value);
                   set("subcategoryId", "");
                 }}
-                className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none dark:bg-input/30"
+                className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm text-foreground outline-none dark:bg-input/30"
               >
                 <option value="">Choose a category</option>
                 {topLevelCategories.map((c) => (
@@ -347,7 +347,7 @@ export function ListingWizard({
                   id="subcategory"
                   value={form.subcategoryId}
                   onChange={(e) => set("subcategoryId", e.target.value)}
-                  className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none dark:bg-input/30"
+                  className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm text-foreground outline-none dark:bg-input/30"
                 >
                   <option value="">None</option>
                   {childCategories(form.categoryId).map((c) => (
@@ -369,7 +369,7 @@ export function ListingWizard({
                 id="condition"
                 value={form.condition}
                 onChange={(e) => set("condition", e.target.value as ProductCondition)}
-                className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none dark:bg-input/30"
+                className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm text-foreground outline-none dark:bg-input/30"
               >
                 {CONDITIONS.map((c) => (
                   <option key={c.value} value={c.value}>

@@ -72,7 +72,7 @@ export function CategoryFormDialog({
               id="cat-parent"
               value={parentId ?? ""}
               onChange={(e) => setParentId(e.target.value)}
-              className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+              className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
             >
               <option value="">None (top-level)</option>
               {parentOptions

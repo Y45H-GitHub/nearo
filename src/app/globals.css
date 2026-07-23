@@ -68,6 +68,13 @@
 }
 
 :root {
+  /* Tells the browser to render native form controls (select/option popups,
+     checkboxes, scrollbars, and the default text color of inputs/textareas
+     before our own classes apply) using the light palette. Without this,
+     browsers assume light mode for those regardless of our .dark class,
+     which is what made textarea/select text unreadable in dark mode. */
+  color-scheme: light;
+
   /* Nearo primitives — design-tokens.md § 2 (light mode active values) */
   --stone-50: #fafaf9;
   --stone-100: #f1efec;
@@ -122,6 +129,8 @@
 }
 
 .dark {
+  color-scheme: dark;
+
   --background: var(--stone-900);
   --foreground: var(--stone-50);
   --card: #26221f;

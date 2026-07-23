@@ -165,7 +165,7 @@ export function ExploreFilterSidebar() {
             <select
               value={radiusKm}
               onChange={(e) => updateParams((params) => params.set("radiusKm", e.target.value))}
-              className="h-8 w-fit rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none dark:bg-input/30"
+              className="h-8 w-fit rounded-lg border border-input bg-transparent px-2.5 text-sm text-foreground outline-none dark:bg-input/30"
             >
               {[5, 10, 25, 50].map((km) => (
                 <option key={km} value={km}>
@@ -220,7 +220,7 @@ export function SortSelect() {
         params.set("sort", e.target.value);
         router.push(`/explore?${params.toString()}`);
       }}
-      className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none dark:bg-input/30"
+      className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm text-foreground outline-none dark:bg-input/30"
     >
       {SORT_OPTIONS.map((o) => (
         <option key={o.value} value={o.value}>
