@@ -34,10 +34,16 @@ export function UserMenu({
           <Link href="/bookings">My bookings</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
+          <Link href="/owner">Dashboard</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
           <Link href="/owner/listings">My listings</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/owner/bookings">Booking requests</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/owner/earnings">Earnings</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild variant="destructive">
