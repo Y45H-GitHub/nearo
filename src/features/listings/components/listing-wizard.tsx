@@ -257,7 +257,11 @@ export function ListingWizard({
   const stepValid = (() => {
     switch (step) {
       case 0:
-        return form.title.trim().length >= 3 && form.categoryId;
+        return (
+          form.title.trim().length >= 3 &&
+          Boolean(form.categoryId) &&
+          form.description.trim().length >= 10
+        );
       case 1:
         return true;
       case 2:
@@ -309,6 +313,13 @@ export function ListingWizard({
                 rows={5}
                 className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
               />
+              <p
+                className={`text-xs ${
+                  form.description.trim().length >= 10 ? "text-muted-foreground" : "text-destructive"
+                }`}
+              >
+                {form.description.trim().length}/10 characters minimum
+              </p>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="category">Category</Label>
@@ -556,16 +567,19 @@ export function ListingWizard({
         {error && step !== 6 && <p className="mt-3 text-sm text-destructive">{error}</p>}
       </div>
 
-      {step < 6 && (
-        <div className="mt-4 flex justify-between">
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={step === 0}
-            onClick={() => setStep((s) => Math.max(0, s - 1))}
-          >
-            Back
-          </Button>
+      <div className="mt-4 flex justify-between">
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={step === 0}
+          onClick={() => {
+            setError(null);
+            setStep((s) => Math.max(0, s - 1));
+          }}
+        >
+          Back
+        </Button>
+        {step < 6 && (
           <Button
             type="button"
             disabled={!stepValid}
@@ -576,8 +590,8 @@ export function ListingWizard({
           >
             Continue
           </Button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
