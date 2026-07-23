@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/shared/status-pill";
 import { VerifiedBadge } from "@/components/shared/verified-badge";
 import { WishlistButton } from "@/features/wishlist/components/wishlist-button";
+import { MessageOwnerButton } from "@/features/messaging/components/message-owner-button";
 import { getWishlistedProductIds } from "@/features/wishlist/queries";
 import { getProductDetail } from "@/features/listings/queries";
 import { incrementViewCount } from "@/features/listings/actions";
@@ -74,19 +75,19 @@ export default async function ProductDetailsPage({
           </p>
 
           {owner && (
-            <Link
-              href={`/users/${owner.id}`}
-              className="mt-4 flex items-center gap-3 rounded-lg border border-border p-3"
-            >
-              <Avatar className="size-10">
-                <AvatarImage src={owner.avatar_url ?? undefined} />
-                <AvatarFallback>{owner.full_name.slice(0, 1) || "?"}</AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-sm font-medium text-foreground">{owner.full_name}</p>
-                <VerifiedBadge verified={Boolean(owner.phone_verified_at)} />
-              </div>
-            </Link>
+            <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+              <Link href={`/users/${owner.id}`} className="flex items-center gap-3">
+                <Avatar className="size-10">
+                  <AvatarImage src={owner.avatar_url ?? undefined} />
+                  <AvatarFallback>{owner.full_name.slice(0, 1) || "?"}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-sm font-medium text-foreground">{owner.full_name}</p>
+                  <VerifiedBadge verified={Boolean(owner.phone_verified_at)} />
+                </div>
+              </Link>
+              {!isOwner && <MessageOwnerButton productId={product.id} />}
+            </div>
           )}
 
           <p className="mt-6 whitespace-pre-line text-sm text-foreground">{product.description}</p>

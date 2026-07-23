@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { UserMenu } from "@/components/shared/user-menu";
 import { getOwnProfile } from "@/features/auth/queries";
+import { getTotalUnreadCount } from "@/features/messaging/queries";
 
 /**
  * Minimal chrome through M3 — enough nav to reach every page that exists so
@@ -12,6 +13,7 @@ import { getOwnProfile } from "@/features/auth/queries";
  */
 export async function SiteHeader() {
   const result = await getOwnProfile();
+  const unreadCount = result?.profile ? await getTotalUnreadCount() : 0;
 
   return (
     <header className="flex items-center justify-between border-b border-border px-6 py-4">
@@ -27,6 +29,16 @@ export async function SiteHeader() {
         <ThemeToggle />
         {result?.profile ? (
           <>
+            <Button variant="ghost" asChild className="relative">
+              <Link href="/messages">
+                Messages
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+                    {unreadCount}
+                  </span>
+                )}
+              </Link>
+            </Button>
             <Button variant="ghost" asChild>
               <Link href="/wishlist">Wishlist</Link>
             </Button>
