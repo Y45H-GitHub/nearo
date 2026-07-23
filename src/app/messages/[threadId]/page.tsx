@@ -4,7 +4,6 @@ import { MessageBubble } from "@/features/messaging/components/message-bubble";
 import { MessageComposer } from "@/features/messaging/components/message-composer";
 import { ThreadPoller } from "@/features/messaging/components/thread-poller";
 import { getThreadDetail } from "@/features/messaging/queries";
-import { markThreadRead } from "@/features/messaging/actions";
 
 export default async function ThreadPage({
   params,
@@ -16,11 +15,9 @@ export default async function ThreadPage({
   if (!result) notFound();
   const { thread, messages, currentUserId } = result;
 
-  void markThreadRead(threadId);
-
   return (
     <div className="mx-auto flex h-[calc(100vh-65px)] max-w-2xl flex-col px-6 py-6">
-      <ThreadPoller />
+      <ThreadPoller threadId={threadId} />
       <Link href="/messages" className="mb-3 text-sm text-muted-foreground">
         ← All messages
       </Link>

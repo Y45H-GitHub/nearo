@@ -101,10 +101,19 @@ export async function markThreadRead(threadId: string): Promise<void> {
   } = await supabase.auth.getUser();
   if (!user) return;
 
-  await supabase
+  const { data: updated } = await supabase
     .from("messages")
     .update({ read_at: new Date().toISOString() })
     .eq("thread_id", threadId)
     .neq("sender_id", user.id)
-    .is("read_at", null);
+    .is("read_at", null)
+    .select("id");
+
+  // Only revalidate when something actually flipped to read — this runs on
+  // every poll tick, and the header badge lives in the root layout, so an
+  // unconditional revalidate here would re-render it every 4s for nothing.
+  if (updated && updated.length > 0) {
+    revalidatePath("/messages");
+    revalidatePath("/", "layout");
+  }
 }
