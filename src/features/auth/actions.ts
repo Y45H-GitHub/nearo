@@ -63,9 +63,19 @@ export async function signInWithPassword(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  const { data, error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) {
     return actionError("INVALID_CREDENTIALS", "Incorrect email or password.");
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_suspended")
+    .eq("id", data.user.id)
+    .single();
+  if ((profile as { is_suspended?: boolean } | null)?.is_suspended) {
+    await supabase.auth.signOut();
+    return actionError("SUSPENDED", "This account has been suspended.");
   }
 
   const redirectTo = (formData.get("redirectTo") as string) || "/";

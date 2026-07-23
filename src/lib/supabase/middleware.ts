@@ -36,19 +36,30 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (request.nextUrl.pathname.startsWith("/admin")) {
-    if (!user) {
-      return NextResponse.rewrite(new URL("/404", request.url));
-    }
-    const { data: profile } = await supabase
+  // Fetched once for any logged-in request — role gates /admin/*, is_suspended
+  // is checked globally so an account suspended mid-session gets signed out
+  // on its very next request rather than staying live until the token expires.
+  let profile: { role?: string; is_suspended?: boolean } | null = null;
+  if (user) {
+    const { data } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, is_suspended")
+      // Placeholder Database type (src/types/database.ts) can't narrow this
+      // until real generated types exist — see that file's header comment.
       .eq("id", user.id)
       .single();
-    // Placeholder Database type (src/types/database.ts) can't narrow this
-    // until real generated types exist — see that file's header comment.
-    const role = (profile as { role?: string } | null)?.role;
-    if (role !== "admin") {
+    profile = data as { role?: string; is_suspended?: boolean } | null;
+  }
+
+  if (user && profile?.is_suspended) {
+    await supabase.auth.signOut();
+    const redirectUrl = new URL("/login", request.url);
+    redirectUrl.searchParams.set("suspended", "1");
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  if (request.nextUrl.pathname.startsWith("/admin")) {
+    if (!user || profile?.role !== "admin") {
       return NextResponse.rewrite(new URL("/404", request.url));
     }
   }

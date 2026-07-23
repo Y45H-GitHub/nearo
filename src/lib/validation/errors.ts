@@ -15,6 +15,8 @@ export type ActionErrorCode =
   | "OTP_EXPIRED"
   | "OTP_INVALID"
   | "OTP_LOCKED"
+  | "FORBIDDEN"
+  | "SUSPENDED"
   | "UNKNOWN";
 
 export type ActionResult<T = undefined> =
